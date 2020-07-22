@@ -1,53 +1,45 @@
+// for .env file
+require('dotenv').config()
 const express = require('express')
-const { response } = require('express')
 const morgan = require('morgan')
 const app = express()
 const cors = require('cors')
+// Person constructor module
+const Person = require('./modules/person')
 
+// required for using react production build
 app.use(express.static('build'))
 
 app.use(express.json())
 
 app.use(cors())
 
+// this prints GET/POST etc. stuff to console
 morgan.token('post-body', (req, res) => { return JSON.stringify(req.body) })
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :post-body'))
-
-let persons = [
-    {
-        "name": "John Loper",
-        "number": "831-234-3454",
-        "id": 1
-    },
-    {
-        "name": "Alison Deshong",
-        "number": "949-234-5738",
-        "id": 2
-    },
-    {
-        "name": "Shoalie",
-        "number": "714-251-2324",
-        "id": 3
-    }
-]
 
 app.get('/', (req, res) => {
     res.send('<h1>Hello World!</h1>')
 })
 
 app.get('/api/persons', (req, res) => {
-    res.json(persons)
+    Person.find({}).then(persons => {
+        res.json(persons)
+    })
 })
 
 app.get('/api/persons/:id', (req, res) => {
-    const id = Number(req.params.id)
-    const person = persons.find(note => note.id === id)
+    // const id = Number(req.params.id)
+    // const person = persons.find(note => note.id === id)
 
-    if (person) {
+    // if (person) {
+    //     res.json(person)
+    // } else {
+    //     res.status(404).end()
+    // }
+    Person.findById(req.params.id).then(person => {
         res.json(person)
-    } else {
-        res.status(404).end()
-    }
+    })
 })
 
 app.delete('/api/persons/:id', (req, res) => {
@@ -58,25 +50,22 @@ app.delete('/api/persons/:id', (req, res) => {
 })
 
 app.post('/api/persons', (req, res) => {
-    const person = req.body
+    const body = req.body
 
-    if (!person.name || !person.number) {
+    if (!body.name || !body.number) {
         return res.status(400).json({
             error: 'content missing'
         })
     }
 
-    person.id = Math.floor(Math.random() * 10000)
-    const name = persons.find(entry => entry.name === person.name)
+    const person = new Person({
+        name: body.name,
+        number: body.number
+    })
 
-    if (name) {
-        return res.status(400).json({
-            error: `${person.name} is already in the phonebook`
-        })
-    }
-
-    persons.push(person)
-    res.json(persons)
+    person.save().then(savedPerson => {
+        res.json(savedPerson)
+    })
 })
 
 app.get('/info', (req, res) => {
@@ -88,7 +77,7 @@ app.get('/info', (req, res) => {
         `)
 })
 
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT
 app.listen(PORT , () => {
     console.log(`Server running on port ${PORT}`)
 })
