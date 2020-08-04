@@ -4,7 +4,7 @@ const morgan = require('morgan')
 const app = express()
 const cors = require('cors')
 const Person = require('./modules/mongoosePerson')
-const { response } = require('express')
+// const { response } = require('express')
 
 app.use(express.static('build'))
 app.use(express.json())
@@ -12,7 +12,7 @@ app.use(cors())
 // app.use(logger)
 
 // this prints GET/POST etc. stuff to console
-morgan.token('post-body', (req, res) => { return JSON.stringify(req.body) })
+morgan.token('post-body', (req) => { return JSON.stringify(req.body) })
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :post-body'))
 
 app.get('/', (req, res) => {
@@ -42,7 +42,7 @@ app.get('/api/persons/:id', (req, res, next) => {
 // delete specific person using id
 app.delete('/api/persons/:id', (req, res, next) => {
     Person.findByIdAndRemove(req.params.id)
-        .then(deletedPerson => {
+        .then( () => {
             res.status(204).end()
         })
         .catch(error => next(error))
@@ -94,7 +94,7 @@ app.get('/info', (req, res) => {
 
 const errorHandler = (error, req, res, next) => {
     console.error(error.message)
-  
+
     if (error.name === 'CastError') {
         return res.status(400).send({ error: 'malformatted id' })
     } else if (error === 'Person not found') {
@@ -102,10 +102,10 @@ const errorHandler = (error, req, res, next) => {
     } else if (error.name === 'ValidationError') {
         return res.status(400).json({ error: error.message })
     }
-  
+
     next(error)
 }
-  
+
 app.use(errorHandler)
 
 const PORT = process.env.PORT
